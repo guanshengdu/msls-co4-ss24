@@ -120,7 +120,8 @@ We also recommend using a tool to manage different Python environments, such as 
     * Type and select: *Notebook: Select Notebook Kernel*
     * Choose: *Select Another Kernel*
     * Choose: *Python Environments*
-    * Choose `venv-msls-co4` from the drop down list
+    * Choose `venv-msls-co4` from the drop down list  
+      If you don't see the new venv, you may have to restart VS Code
   * Run the notebook 
 
 <!--Unfortunately, relative links inside lists (and other non-paragraph markdown blocks) are currently not supported. See here: https://github.com/orgs/community/discussions/67750, https://github.com/github/markup/issues/1773 -->
