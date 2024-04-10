@@ -196,3 +196,18 @@ def color_transition(color_a, color_b, mode="mix", gamma=None,
     palette = [mix_colors_rgba(color_a, color_b, t=t, mode=mode, gamma=gamma)
                for t in ts]
     return palette
+
+
+def colors2plotly(colors, alpha=None):
+    """
+    Converts a list of colors into a list of plotly colors.
+    """
+    def c2pRGBA(c, a=None):
+        if a is None and len(c)==3:
+            return f"rgb{tuple(c[:3])}"
+        elif a is None and len(c)==4:
+            return f"rgba{tuple(c)}"
+        else:
+            return f"rgba{tuple(c[:3]+(a,))}"
+
+    return [c2pRGBA(c, a=alpha) for c in colors] 
