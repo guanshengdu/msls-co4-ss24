@@ -19,3 +19,4 @@ jupyter
 black[jupyter]
 pylint
 gitpython
+nbconvert
