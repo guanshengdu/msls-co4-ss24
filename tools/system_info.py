@@ -4,12 +4,11 @@ from datetime import datetime
 def print_system_info():
     """Collects information about the system and prints it to the console."""
     info = {}
-    print()
     get_repo_info(info)
     get_platform_info(info)
     get_python_info(info)
     get_package_info_all(info)
-    print()
+    get_ffmpeg_info(info)
     print_info_dict(info)
 
 
@@ -19,17 +18,6 @@ def get_repo_info(info):
         from git import Repo
         repo = Repo("..")
         repo_name = repo.remotes.origin.url.split("/")[-1]
-        old_base_url = "github.zhaw.ch"
-        if old_base_url in repo.remotes.origin.url:
-            new_url = "https://github.com/hirsch-lab/" + repo_name
-            old_url = "https://github.zhaw.ch/hirsch-lab/" + repo_name
-            print("#"*60)
-            print("WARNING: Please remove this repository and clone it from")
-            print("        ", new_url)
-            print("         This repo is discontinued and will be removed soon.")
-            print("        ", old_url)
-            print("#"*60)
-            print()
         commit_hash = repo.head.object.hexsha[0:8]
         commit_date = repo.head.object.committed_date
         fmt = "%Y-%m-%d %H:%M:%S"
@@ -84,7 +72,7 @@ def get_package_info(info, name, package_name=None):
             info["packages"][name] = "available"
     except Exception as e:
         info["packages"][package_name] = "<N/A>"
-        print("ERROR:", e)
+        print(e)
 
 
 def get_package_info_all(info):
@@ -98,11 +86,28 @@ def get_package_info_all(info):
     get_package_info(info, "OpenCV", "cv2")
     get_package_info(info, "Pillow", "PIL")
     get_package_info(info, "skimage")
-    get_package_info(info, "nibabel")
-    get_package_info(info, "pydicom")
-    get_package_info(info, "SimpleITK")
 
+    get_package_info(info, "soundfile")
+    get_package_info(info, "sounddevice")
     get_package_info(info, "jupyter")
+
+
+def get_ffmpeg_info(info):
+    try:
+        import subprocess
+        result = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE)
+        version = result.stdout.decode("utf-8").split("\n")[0]
+        version = version.split(" ")[2]
+        info["ffmpeg"] = version
+    except Exception as e:
+        info["ffmpeg"] = "<N/A>"
+
+    try:
+        import ffmpeg
+        info["ffmpeg_python"] = "available"
+    except Exception as e:
+        info["ffmpeg_python"] = "<N/A>"
+        
 
 def print_info_dict(info):
     print("Repository Info:")
@@ -119,7 +124,6 @@ def print_info_dict(info):
     print("Python:")
     print("=======")
     print("  {0:>14} : {1}".format("Version", info["python"]))
-    print("  {0:>14} : {1}".format("Version full", info["python_info"]))
     print("  {0:>14} : {1}".format("Executable", info["python_executable"]))
     print()
         
@@ -135,6 +139,10 @@ def print_info_dict(info):
     for k, v in info["packages"].items():
         print("{0:>14} : {1}".format(k, v))
     print()
+    print("FFmpeg:")
+    print("=======")
+    print("{0:>14} : {1}".format("ffmpeg", info["ffmpeg"]))
+    print("{0:>14} : {1}".format("ffmpeg-python", info["ffmpeg_python"]))
 
 
 
