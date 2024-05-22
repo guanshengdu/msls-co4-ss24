@@ -31,6 +31,7 @@ def draw_image(image, **kwargs):
 def show_image(image, title=None, 
                ax=None, shape=None, 
                normalize=False,
+               normalize_stretch=None,
                dpi=100, 
                suppress_info=False,
                background_color=(0.93, 0.93, 0.93),
@@ -54,7 +55,10 @@ def show_image(image, title=None,
                 respectively. If normalize is a 2-tuple, the provided values
                 will be used for normalization (vmin, vmax = normalize). If 
                 False or None, the images are displayed using the full range 
-                of the current data type. 
+                of the current data type. If "stretch", the contrast is
+                stretched using the 1% and 99% percentiles of the intensity.
+        normalize_stretch: If not None, the contrast is stretched using the
+                provided percentiles of the intensity. Sets normalize to True.
         frame: If True, a frame is drawn around the image (if the image
                is smaller than the canvas).
     """
@@ -64,6 +68,8 @@ def show_image(image, title=None,
         # Create a figure of the right size with 
         # one axis that takes up the full figure
         figsize = width / float(dpi), height / float(dpi)
+        if figsize[0]>9 and True:
+            figsize = (9, figsize[1] * 9 / figsize[0])
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0, 0, 1, 1])
 
@@ -71,13 +77,19 @@ def show_image(image, title=None,
     cmap = "gray" if len(image.shape) == 2 else None
 
     vmin, vmax = None, None
-    if not normalize:
+    if normalize_stretch is not None:
+        if isinstance(normalize_stretch, (float, int)):
+            normalize_stretch = (normalize_stretch, 100-normalize_stretch)
+        vmin, vmax = np.percentile(image, normalize_stretch)
+    elif not normalize:
+        # imshow normalization is on by default!
+        # If one wants to disable it, one must set vmin and vmax.
         dtype = image.dtype
         if dtype == np.uint8:
             vmin, vmax = 0, 255
         elif dtype == np.uint16:
             vmin, vmax = 0, 65535
-        elif dtype in (np.float32, np.float64, float):
+        elif dtype in (np.float32, np.float64, float, bool):
             vmin, vmax = 0, 1.0
         else:
             assert False, "Unsupported data type: %s" % dtype
@@ -186,7 +198,7 @@ def show_image_chain(images, **kwargs):
     """Displays a list of images. Equivalent to show_image_grid(..., ncols=-1).
     """
     kwargs.setdefault("ncols", -1)
-    show_image_grid(images, **kwargs) 
+    return show_image_grid(images, **kwargs) 
 
 
 def show_image_grid(images, titles=None, 
@@ -251,7 +263,8 @@ def show_image_grid(images, titles=None,
         titles = list(titles)
     elif titles is None:
         titles = [None] * len(images)
-    images = [np.asarray(img) for img in images]
+    
+    images = [None if img is None else np.asarray(img) for img in images]
     assert titles is None or (len(images) == len(titles))
     has_titles = any(titles)
 
@@ -264,7 +277,7 @@ def show_image_grid(images, titles=None,
         nrows = int(np.ceil(len(images) / ncols))
 
     # Manage shape
-    h_max, w_max = np.vstack([img.shape[:2] for img in images]).max(axis=0)
+    h_max, w_max = np.vstack([ img.shape[:2] for img in images if img is not None ]).max(axis=0)
     
     # Height of title in inches
     h_title = (has_titles*1 + (not suppress_info)*0.5)*scale
@@ -287,7 +300,10 @@ def show_image_grid(images, titles=None,
                              figsize=figsize,
                              squeeze=False)
     
-    for ax, image, title in zip(axes.flat, images, titles):            
+    for ax, image, title in zip(axes.flat, images, titles):    
+        if image is None:
+            ax.axis("off")
+            continue        
         draw_frame = ((frame=="forced") or 
                       (frame and shape is not None and shape!=image.shape[:2]))
         show_image(image, title=title, ax=ax, 
@@ -302,7 +318,7 @@ def show_image_grid(images, titles=None,
     for i in range(len(images), len(axes.flat)):
         axes.flat[i].axis("off")
     fig.tight_layout()
-
+    return fig
 
 
 def save_figure(fig=None, path="figure.pdf", **kwargs):
